@@ -30,12 +30,16 @@ spec:
 	}
     }
 
+    options {
+        // Zachowaj tylko 10 ostatnich buildów
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+    }
+
     triggers {
         pollSCM('H/5 * * * *')
     }
 
-
-   environment {
+    environment {
         // Mapowanie ID plików z Managed Files
         CONFIG_JSON_ID = 'websites-config'
         INVENTORY_ID   = 'farm-inventory'
@@ -44,7 +48,7 @@ spec:
         VARS_DEBIAN_ID = 'groupvars-debian-servers-yml'
 	VAULT_ID = 'ansible-vault'
 	KNOWN_HOSTS = 'all-known-hosts'
-        
+
         PACKAGE_NAME   = "hugo-build-${env.BUILD_NUMBER}.tar.gz"
     }
 
@@ -64,7 +68,7 @@ spec:
 		}
 	    }
 	}
-	
+
 	stage('Checkout Ansible Library') {
 	    steps {
 		container('devlog-ansible-builder') {
@@ -86,7 +90,7 @@ spec:
                     // Generowanie strony i paczki
                     sh "rm -rf public && hugo --minify"
                     sh "tar -czf ${PACKAGE_NAME} -C public ."
-                    
+
                     script {
 			// Wykrywanie nazwy repozytorium do klucza w JSON
 			def remoteUrl = sh(script: "git config --get remote.origin.url", returnStdout: true).trim()
