@@ -29,15 +29,16 @@ jobs:
         with:
           repository: lvajxi03/ansible
           path: ansible          
-      - name: Konfiguracja Pythona i instalacja Ansible
+      - name: Konfiguracja Pythona
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          run: pip install ansible
+      - name: Instalacja ansible
+        run: pip install ansible
       - name: Uruchom hugo i zbuduj paczkę
         run: |
           rm -rf public && hugo --minify
-          tar -czf hugo-build-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}.tar.gz
+          tar -czf hugo-build-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}.tar.gz -C public .
       - name: Konfiguracja agenta SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
