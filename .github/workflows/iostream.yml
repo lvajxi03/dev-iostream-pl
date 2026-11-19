@@ -67,7 +67,7 @@ jobs:
           ANSIBLE_VAULT: ${{ secrets.ANSIBLE_VAULT }}
           RUTHERFORDIUM_SPECIFICS: ${{ secrets.RUTHERFORDIUM_SPECIFICS }}
         run: |
-          mkdir -p group_vars/all host_vars"
+          mkdir -p group_vars/all host_vars
           echo ${FARM_INVENTORY} > inventory.yml
           echo ${ANSIBLE_VAULT} > group_vars/all/vault.yml
           echo ${GROUPVARS_DEBIAN} > group_vars/debian_servers.yml
