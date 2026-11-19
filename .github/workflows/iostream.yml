@@ -71,7 +71,7 @@ jobs:
           echo "${FARM_INVENTORY}" > inventory.yml
           echo "${ANSIBLE_VAULT}" > group_vars/all/vault.yml
           echo "${GROUPVARS_DEBIAN}" > group_vars/debian_servers.yml
-          echo "${RUTHERFORDIUM_SPECIFIC}" > host_vars/rutherfordium.yml
+          echo "${RUTHERFORDIUM_SPECIFICS}" > host_vars/rutherfordium.yml
           echo "${ANSIBLE_VAULT_PASSWORD}" > /dev/shm/.vault_pass
           chmod 600 /dev/shm/.vault_pass
 
