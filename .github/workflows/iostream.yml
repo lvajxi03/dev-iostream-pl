@@ -81,7 +81,7 @@ jobs:
           --vault-password-file ${ANSIBLE_VAULT_PASSWORD_FILE} \
           -l ${TARGET_HOST} \
           -e 'app_package_local_path=hugo-build-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}.tar.gz' \
-          -e 'app_web_root=${WEB_ROOT} \
+          -e 'app_web_root=${WEB_ROOT}' \
           -u ${SSH_USER}
       - name: Czyszczenie pliku z hasłem Vault
         if: always()
