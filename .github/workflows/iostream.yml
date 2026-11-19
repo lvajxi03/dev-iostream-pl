@@ -11,6 +11,7 @@ jobs:
     if: github.repository == 'lvajxi03/dev-iostream-pl'
     runs-on:
       ubuntu-latest
+    environment: iostream
     env:
       HUGO_VERSION: 0.161.1
     steps:
