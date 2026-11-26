@@ -28,6 +28,7 @@ defaults:
 jobs:
   # Build job
   build:
+    if: github.repository == 'lvajxi03/lvajxi03.github.io'
     runs-on: ubuntu-latest
     env:
       HUGO_VERSION: 0.161.1
@@ -62,6 +63,7 @@ jobs:
 
   # Deployment job
   deploy:
+    if: github.repository == 'lvajxi03/lvajxi03.github.io.git'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -71,4 +73,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-

@@ -1,0 +1,89 @@
+name: Deploy Hugo site to iostream.pl
+
+on:
+  push:
+    branches: ["main", "feature/*"]
+
+  workflow_dispatch:
+
+jobs:
+  hugo-iostream:
+    if: github.repository == 'lvajxi03/dev-iostream-pl'
+    runs-on:
+      ubuntu-latest
+    environment: iostream
+    env:
+      HUGO_VERSION: 0.161.1
+    steps:
+      - name: Zainstaluj hugo
+        run: |
+          wget -O ${{ runner.temp }}/hugo.deb https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-amd64.deb \
+          && sudo dpkg -i ${{ runner.temp }}/hugo.deb
+      - name: Zainstaluj Dart Sass
+        run: sudo snap install dart-sass
+      - name: Zwyczajny checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Pobierz bibliotekę ansible
+        uses: actions/checkout@v4
+        with:
+          repository: lvajxi03/ansible
+          path: ansible
+      - name: Konfiguracja Pythona
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Instalacja ansible
+        run: pip install ansible
+      - name: Uruchom hugo i zbuduj paczkę
+        run: |
+          rm -rf public && hugo --minify
+          tar -czf hugo-build-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}.tar.gz -C public .
+      - name: Konfiguracja agenta SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # Opcjonalnie, jeśli klucz ma hasło:
+          # ssh-passphrase: ${{ secrets.SSH_PASSPHRASE }}
+
+      - name: Konfiguracja known_hosts
+        env:
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      # KROK 3: Uruchomienie Playbooka z obsługą Ansible Vault
+      - name: Uruchomienie Ansible Playbook
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+          TARGET_HOST: ${{ secrets.TARGET_HOST }}
+          WEB_ROOT: ${{ secrets.WEB_ROOT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          FARM_INVENTORY: ${{ secrets.FARM_INVENTORY }}
+          GROUPVARS_DEBIAN: ${{ secrets.GROUPVARS_DEBIAN}}
+          ANSIBLE_VAULT: ${{ secrets.ANSIBLE_VAULT }}
+          RUTHERFORDIUM_SPECIFICS: ${{ secrets.RUTHERFORDIUM_SPECIFICS }}
+        run: |
+          mkdir -p group_vars/all host_vars
+          echo "${FARM_INVENTORY}" > inventory.yml
+          echo "${ANSIBLE_VAULT}" > group_vars/all/vault.yml
+          echo "${GROUPVARS_DEBIAN}" > group_vars/debian_servers.yml
+          echo "${RUTHERFORDIUM_SPECIFICS}" > host_vars/rutherfordium.yml
+          echo "${ANSIBLE_VAULT_PASSWORD}" > /dev/shm/.vault_pass
+          chmod 600 /dev/shm/.vault_pass
+
+          export ANSIBLE_VAULT_PASSWORD_FILE=/dev/shm/.vault_pass
+
+          ansible-playbook -i inventory.yml ansible/playbooks/hugo-deploy.yml \
+          --vault-password-file ${ANSIBLE_VAULT_PASSWORD_FILE} \
+          -l ${TARGET_HOST} \
+          -e app_package_local_path="${GITHUB_WORKSPACE}/hugo-build-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}.tar.gz" \
+          -e app_web_root="${WEB_ROOT}" \
+          -e 'description=rutherfordium' \
+          -u ${SSH_USER}
+      - name: Czyszczenie pliku z hasłem Vault
+        if: always()
+        run: rm -f /dev/shm/.vault_pass
